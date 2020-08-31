@@ -46,9 +46,12 @@ namespace NUnit.Analyzers.Tests.Constants
         [Test]
         public void FullNameOfTypeTestCaseAttributeTest()
         {
+            // We want to verify that our constant definition matches the real definition.
+#pragma warning disable NUnit2007 // The actual value should not be a constant.
             Assert.That(
                 NunitFrameworkConstants.FullNameOfTypeTestCaseAttribute,
                 Is.EqualTo(typeof(TestCaseAttribute).FullName));
+#pragma warning restore NUnit2007 // The actual value should not be a constant.
         }
 
         [Test]
@@ -65,9 +68,12 @@ namespace NUnit.Analyzers.Tests.Constants
         [Test]
         public void NUnitAssemblyNameTest()
         {
+            // We want to verify that our constant definition matches the real definition.
+#pragma warning disable NUnit2007 // The actual value should not be a constant.
             Assert.That(
                 NunitFrameworkConstants.NUnitFrameworkAssemblyName,
                 Is.EqualTo(typeof(Assert).Assembly.GetName().Name));
+#pragma warning restore NUnit2007 // The actual value should not be a constant.
         }
     }
 }
