@@ -25,7 +25,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\nunit.analyzers\nunit.analyzers.csproj" />
+    <ProjectReference Include="..\nunit.analyzers\nunit.analyzers.csproj" >
+      <OutputItemType>Analyzer</OutputItemType>
+    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>
