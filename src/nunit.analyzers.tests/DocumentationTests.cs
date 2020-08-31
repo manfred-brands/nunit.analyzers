@@ -54,9 +54,9 @@ namespace NUnit.Analyzers.Tests
         [TestCaseSource(nameof(descriptorInfos))]
         public void EnsureThatAllIdsAreUnique(DescriptorInfo descriptorInfo)
         {
-            Assert.AreEqual(1, descriptorInfos.Select(x => x.Descriptor)
-                                              .Distinct()
-                                              .Count(d => d.Id == descriptorInfo.Descriptor.Id));
+            Assert.That(descriptorInfos.Select(x => x.Descriptor)
+                                       .Distinct()
+                                       .Count(d => d.Id == descriptorInfo.Descriptor.Id), Is.EqualTo(1));
         }
 
         [TestCaseSource(nameof(descriptorInfos))]
@@ -84,7 +84,7 @@ namespace NUnit.Analyzers.Tests
                 .Select(l => l.Replace(@"\<", "<", StringComparison.Ordinal))
                 .Take(2);
 
-            Assert.AreEqual(expected, actual);
+            Assert.That(actual, Is.EqualTo(expected));
         }
 
         [TestCaseSource(nameof(DescriptorsWithDocs))]
@@ -105,7 +105,7 @@ namespace NUnit.Analyzers.Tests
 
             DumpIfDebug(expected);
             DumpIfDebug(actual);
-            Assert.AreEqual(expected, actual);
+            Assert.That(actual, Is.EqualTo(expected));
         }
 
         [TestCaseSource(nameof(DescriptorsWithDocs))]
