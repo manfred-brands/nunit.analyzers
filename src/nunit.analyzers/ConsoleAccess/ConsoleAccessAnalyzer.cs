@@ -30,6 +30,9 @@ namespace NUnit.Analyzers.ConsoleAccess
 
         private static void AnalyzeCompilationStart(CompilationStartAnalysisContext context)
         {
+            if (context.Compilation.Options.OptimizationLevel == OptimizationLevel.Debug)
+                return;
+
             INamedTypeSymbol? systemConsoleType = context.Compilation.GetTypeByMetadataName("System.Console");
             if (systemConsoleType is null)
                 return;
