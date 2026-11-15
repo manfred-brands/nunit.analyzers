@@ -26,7 +26,14 @@ namespace NUnit.Analyzers.DiagnosticSuppressors
         {
             foreach (var diagnostic in context.ReportedDiagnostics)
             {
-                SyntaxTree? sourceTree = diagnostic.Location.SourceTree;
+                // When CS8618 is reported on a constructor, newer compilers pass the location
+                // of the uninitialized field/property as the diagnostic's single AdditionalLocation.
+                Location location = diagnostic.AdditionalLocations.Count == 1
+                                  ? diagnostic.AdditionalLocations[0]
+                                  : diagnostic.Location;
+
+                // The field/property could be declared in a different file of a partial type.
+                SyntaxTree? sourceTree = location.SourceTree;
 
                 if (sourceTree is null)
                 {
@@ -34,7 +41,7 @@ namespace NUnit.Analyzers.DiagnosticSuppressors
                 }
 
                 SyntaxNode node = sourceTree.GetRoot(context.CancellationToken)
-                                            .FindNode(diagnostic.Location.SourceSpan);
+                                            .FindNode(location.SourceSpan);
 
                 string fieldOrPropertyName;
 
@@ -48,6 +55,7 @@ namespace NUnit.Analyzers.DiagnosticSuppressors
                 }
                 else if (node is ConstructorDeclarationSyntax)
                 {
+                    // Older compilers report CS8618 on the constructor without an AdditionalLocation.
                     // Unfortunately the actual field name is not directly accessible.
                     // It seems to be in Argument[1], but that field is an internal property.
                     // Resort to reflection.
