@@ -106,15 +106,16 @@ namespace NUnit.Analyzers.DiagnosticSuppressors
                     out ImmutableHashSet<string> additionalSetUpMethods,
                     out _);
 
-                var methods = typeDeclaration.Members.OfType<MethodDeclarationSyntax>();
-                foreach (var method in methods)
+                // We have to move to the semantic model to find all methods, including those in other parts of a partial class.
+                var declaredType = model.GetDeclaredSymbol(typeDeclaration) as INamedTypeSymbol;
+                if (declaredType is null)
                 {
-                    var declaredMethod = model.GetDeclaredSymbol(method) as IMethodSymbol;
-                    if (declaredMethod is null)
-                    {
-                        continue;
-                    }
+                    continue;
+                }
 
+                var declaredMethods = declaredType.GetMembers().OfType<IMethodSymbol>();
+                foreach (var declaredMethod in declaredMethods)
+                {
                     // Is the method a configured additional SetUp or OneTimeSetUp method?
                     if ((declaredMethod.IsOverride &&
                             (additionalSetUpMethods.Contains(declaredMethod.Name) ||
@@ -123,6 +124,12 @@ namespace NUnit.Analyzers.DiagnosticSuppressors
                         declaredMethod.HasAttribute(NUnitFrameworkConstants.NameOfOneTimeSetUpAttribute))
                     {
                         // Check for assignment to this field.
+                        var method = declaredMethod.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax() as MethodDeclarationSyntax;
+                        if (method is null)
+                        {
+                            continue;
+                        }
+
                         HashSet<SyntaxNode> visitedMethods = new();
                         if (IsAssignedIn(model, typeDeclaration, visitedMethods, method.ExpressionBody, method.Body, fieldOrPropertyName))
                         {
