@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Testing;
 using NUnit.Analyzers.DiagnosticSuppressors;
@@ -509,6 +510,37 @@ namespace NUnit.Analyzers.Tests.DiagnosticSuppressors
             await VerifySuppressionAsync(testCode, isSuppressed: true, kind: "field", name: "_configuration");
         }
 
+        [Test]
+        public async Task DetectsSetUpMethodInOtherParts()
+        {
+            var testCodePart1 = TestUtility.WrapClassInNamespaceAndAddUsing("""
+                internal sealed partial class TestClass
+                {
+                    private string {|#0:_name|};
+                }
+            """);
+
+            var testCodePart2 = TestUtility.WrapClassInNamespaceAndAddUsing("""
+                internal sealed partial class TestClass
+                {
+                    [OneTimeSetUp]
+                    public void Setup()
+                    {
+                        _name = "Test Fixture";
+                    }
+
+                    [Test]
+                    public void TestNames()
+                    {
+                        Assert.That(_name, Is.Not.Null);
+                    }
+                }
+            """);
+
+            await VerifySuppressionAsync(testCodePart1, isSuppressed: true, kind: "field", name: "_name",
+                configure: test => test.TestState.Sources.Add(testCodePart2));
+        }
+
         [TestCase("additional_setup_methods")]
         [TestCase("additional_one_time_setup_methods")]
         public async Task DoesDetectWhenFieldIsInitializedInAdditionalSetUpMethod(string configuration)
@@ -563,10 +595,14 @@ namespace NUnit.Analyzers.Tests.DiagnosticSuppressors
             await VerifySuppressionAsync(testCode, isSuppressed: false, kind: "field", name: "Field");
         }
 
-        private static Task VerifySuppressionAsync(string source, bool isSuppressed, string kind, string name, string? additionalConfiguration = null)
-            => VerifySuppressionAsync(source, isSuppressed, kind, [name], additionalConfiguration);
+        private static Task VerifySuppressionAsync(string source, bool isSuppressed, string kind, string name,
+                                                   string? additionalConfiguration = null,
+                                                   Action<NUnitCSharpAnalyzerTest<NonNullableFieldOrPropertyIsUninitializedSuppressor>>? configure = null)
+            => VerifySuppressionAsync(source, isSuppressed, kind, [name], additionalConfiguration, configure);
 
-        private static async Task VerifySuppressionAsync(string source, bool isSuppressed, string kind, string[] names, string? additionalConfiguration = null)
+        private static async Task VerifySuppressionAsync(string source, bool isSuppressed, string kind, string[] names,
+                                                         string? additionalConfiguration = null,
+                                                         Action<NUnitCSharpAnalyzerTest<NonNullableFieldOrPropertyIsUninitializedSuppressor>>? configure = null)
         {
             var test = new NUnitCSharpAnalyzerTest<NonNullableFieldOrPropertyIsUninitializedSuppressor>
             {
@@ -586,6 +622,8 @@ namespace NUnit.Analyzers.Tests.DiagnosticSuppressors
             {
                 test.TestState.AddAnalyzerConfig(additionalConfiguration);
             }
+
+            configure?.Invoke(test);
 
             await test.RunAsync(TestSetup.CancellationToken);
         }
